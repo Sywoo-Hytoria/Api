@@ -1,4 +1,4 @@
-package fr.hytoria.api.Utils;
+package fr.hytoria.api.Utils.enumerations;
 
 /**
  * Created by Sywoo on 06/02/2017.
