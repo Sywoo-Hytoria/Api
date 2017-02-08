@@ -9,6 +9,7 @@ import java.util.Set;
 
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 public class GetBlockRadius {
@@ -45,6 +46,25 @@ public class GetBlockRadius {
     }
     public static Set<Player> spherePlayer(final Location center, final double radius) {
         final Set<Player> blocks = new HashSet<Player>();
+        for (double x = -radius; x <= radius; x++)
+            for (double y = -radius; y <= radius; y++)
+                for (double z = -radius; z <= radius; z++)
+                    if (center.clone().add(x, y, z).distance(center) <= radius)
+                        blocks.add((Player) center.clone().add(x, y, z).getBlock());
+        return blocks;
+
+    }
+    public static Set<Entity> cubeEntity(final Location center, final double radius) {
+        final Set<Entity> blocks = new HashSet<Entity>();
+        for (double x = -radius; x <= radius; x++)
+            for (double y = -radius; y <= radius; y++)
+                for (double z = -radius; z <= radius; z++)
+                    blocks.add((Player) center.clone().add(x, y, z).getBlock());
+        return blocks;
+
+    }
+    public static Set<Entity> sphereEntity(final Location center, final double radius) {
+        final Set<Entity> blocks = new HashSet<Entity>();
         for (double x = -radius; x <= radius; x++)
             for (double y = -radius; y <= radius; y++)
                 for (double z = -radius; z <= radius; z++)
