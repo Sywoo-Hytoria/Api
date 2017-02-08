@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * @author zyuiop
  */
-public class ScoreboardSign {
+public class ScoreBoardUtils {
 	private boolean created = false;
 	private final VirtualTeam[] lines = new VirtualTeam[15];
 	private final Player player;
@@ -27,7 +27,7 @@ public class ScoreboardSign {
 	 * @param player the player viewing the scoreboard sign
 	 * @param objectiveName the name of the scoreboard sign (displayed at the top of the scoreboard)
 	 */
-	public ScoreboardSign(Player player, String objectiveName) {
+	public ScoreBoardUtils(Player player, String objectiveName) {
 		this.player = player;
 		this.objectiveName = objectiveName;
 	}
@@ -51,7 +51,7 @@ public class ScoreboardSign {
 	}
 
 	/**
-	 * Send the packets to remove this scoreboard sign. A destroyed scoreboard sign must be recreated using {@link ScoreboardSign#create()} in order
+	 * Send the packets to remove this scoreboard sign. A destroyed scoreboard sign must be recreated using {@link ScoreBoardUtils#create()} in order
 	 * to be used again
 	 */
 	public void destroy() {
@@ -374,4 +374,4 @@ public class ScoreboardSign {
 			e.printStackTrace();
 		}
 	}
-}}
+}
