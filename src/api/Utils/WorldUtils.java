@@ -2,6 +2,7 @@ package fr.hytoria.api.Utils;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Difficulty;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 
@@ -10,7 +11,6 @@ import fr.hytoria.api.Utils.enumerations.Time;
 public class WorldUtils {
 
 	String name;
-
 
 	public WorldUtils(String name) {
 		this.name = name;
@@ -49,6 +49,12 @@ public class WorldUtils {
 	}
 	public void setHour(String name, Time time){
 		Bukkit.getWorld(name).setTime(time.getHour());
+	}
+	public void setSpawn(String name, Location location){
+		int x = (int) location.getX();
+		int y = (int) location.getY();
+		int z = (int) location.getZ();
+		Bukkit.getWorld(name).setSpawnLocation(x, y, z);
 	}
 
 
