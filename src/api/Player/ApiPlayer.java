@@ -72,6 +72,10 @@ public class ApiPlayer extends CraftPlayer{
         PacketPlayOutChat packet = new PacketPlayOutChat(actionBar, (byte) 2);
         this.craftPlayer.getHandle().playerConnection.sendPacket(packet);
     }
+    public void SentTitle(String Title, String SubTitle){
+    	this.craftPlayer.sendTitle(Title, SubTitle);
+    }
+    
 
 
 }
