@@ -8,4 +8,14 @@
 	</buildSpec>
 	<natures>
 	</natures>
+	<variableList>
+		<variable>
+			<name>Bungee</name>
+			<value>file:/C:/BungeeCord.jar</value>
+		</variable>
+		<variable>
+			<name>Spigot</name>
+			<value>file:/C:/spigot-1.8.8.jar</value>
+		</variable>
+	</variableList>
 </projectDescription>

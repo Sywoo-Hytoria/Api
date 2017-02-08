@@ -4,108 +4,374 @@ package fr.hytoria.api.Utils;
  * Created by Stephane on 05/02/2017.
  * Original class : http://pastebin.com/nWXpwz7e ^^
  */
-import java.util.AbstractMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
-import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
+import net.minecraft.server.v1_8_R3.*;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
-import org.bukkit.scoreboard.DisplaySlot;
-import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 
-public class ScoreBoardUtils {
+/**
+ * @author zyuiop
+ */
+public class ScoreboardSign {
+	private boolean created = false;
+	private final VirtualTeam[] lines = new VirtualTeam[15];
+	private final Player player;
+	private String objectiveName;
 
-    private Scoreboard scoreboard;
+	/**
+	 * Create a scoreboard sign for a given player and using a specifig objective name
+	 * @param player the player viewing the scoreboard sign
+	 * @param objectiveName the name of the scoreboard sign (displayed at the top of the scoreboard)
+	 */
+	public ScoreboardSign(Player player, String objectiveName) {
+		this.player = player;
+		this.objectiveName = objectiveName;
+	}
 
-    private String title;
-    private Map<String, Integer> scores;
-    private List<Team> teams;
+	/**
+	 * Send the initial creation packets for this scoreboard sign. Must be called at least once.
+	 */
+	public void create() {
+		if (created)
+			return;
+		
+		
+		PlayerConnection player = getPlayer();
+		player.sendPacket(createObjectivePacket(0, objectiveName));
+		player.sendPacket(setObjectiveSlot());
+		int i = 0;
+		while (i < lines.length)
+			sendLine(i++);
 
-    public ScoreBoardUtils(String title) {
-        this.scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
-        this.title = title;
-        this.scores = Maps.newLinkedHashMap();
-        this.teams = Lists.newArrayList();
-    }
+		created = true;
+	}
 
-    public void blankLine() {
-        add(" ");
-    }
+	/**
+	 * Send the packets to remove this scoreboard sign. A destroyed scoreboard sign must be recreated using {@link ScoreboardSign#create()} in order
+	 * to be used again
+	 */
+	public void destroy() {
+		if (!created)
+			return;
 
-    public void add(String text) {
-        add(text, null);
-    }
+		getPlayer().sendPacket(createObjectivePacket(1, null));
+		for (VirtualTeam team : lines)
+			if (team != null)
+				getPlayer().sendPacket(team.removeTeam());
 
-    public void add(String text, Integer score) {
-        Preconditions.checkArgument(text.length() < 48, "text cannot be over 48 characters in length");
-        text = fixDuplicates(text);
-        scores.put(text, score);
-    }
+		created = false;
+	}
 
-    private String fixDuplicates(String text) {
-        while (scores.containsKey(text))
-            text += "Â§r";
-        if (text.length() > 48)
-            text = text.substring(0, 47);
-        return text;
-    }
+	/**
+	 * Change the name of the objective. The name is displayed at the top of the scoreboard.
+	 * @param name the name of the objective, max 32 char
+	 */
+	public void setObjectiveName(String name) {
+		this.objectiveName = name;
+		if (created)
+			getPlayer().sendPacket(createObjectivePacket(2, name));
+	}
 
-    private Map.Entry<Team, String> createTeam(String text) {
-        String result = "";
-        if (text.length() <= 16)
-            return new AbstractMap.SimpleEntry<>(null, text);
-        Team team = scoreboard.registerNewTeam("text-" + scoreboard.getTeams().size());
-        Iterator<String> iterator = Splitter.fixedLength(16).split(text).iterator();
-        team.setPrefix(iterator.next());
-        result = iterator.next();
-        if (text.length() > 32)
-            team.setSuffix(iterator.next());
-        teams.add(team);
-        return new AbstractMap.SimpleEntry<>(team, result);
-    }
+	/**
+	 * Change a scoreboard line and send the packets to the player. Can be called async.
+	 * @param line the number of the line (0 <= line < 15)
+	 * @param value the new value for the scoreboard line
+	 */
+	public void setLine(int line, String value) {
+		VirtualTeam team = getOrCreateTeam(line);
+		String old = team.getCurrentPlayer();
 
-    public void build() {
-        Objective obj = scoreboard.registerNewObjective((title.length() > 16 ? title.substring(0, 15) : title), "dummy");
-        obj.setDisplayName(title);
-        obj.setDisplaySlot(DisplaySlot.SIDEBAR);
+		if (old != null && created)
+			getPlayer().sendPacket(removeLine(old));
 
-        int index = scores.size();
+		team.setValue(value);
+		sendLine(line);
+	}
 
-        for (Map.Entry<String, Integer> text : scores.entrySet()) {
-            Map.Entry<Team, String> team = createTeam(text.getKey());
-            Integer score = text.getValue() != null ? text.getValue() : index;
-            OfflinePlayer player = Bukkit.getOfflinePlayer(team.getValue());
-            if (team.getKey() != null)
-                team.getKey().addPlayer(player);
-            obj.getScore(player).setScore(score);
-            index -= 1;
-        }
-    }
+	/**
+	 * Remove a given scoreboard line
+	 * @param line the line to remove
+	 */
+	public void removeLine(int line) {
+		VirtualTeam team = getOrCreateTeam(line);
+		String old = team.getCurrentPlayer();
 
-    public void reset() {
-        title = null;
-        scores.clear();
-        for (Team t : teams)
-            t.unregister();
-        teams.clear();
-    }
+		if (old != null && created) {
+			getPlayer().sendPacket(removeLine(old));
+			getPlayer().sendPacket(team.removeTeam());
+		}
 
-    public Scoreboard getScoreboard() {
-        return scoreboard;
-    }
+		lines[line] = null;
+	}
 
-    public void send(Player... players) {
-        for (Player p : players)
-            p.setScoreboard(scoreboard);
-    }
+	/**
+	 * Get the current value for a line
+	 * @param line the line
+	 * @return the content of the line
+	 */
+	public String getLine(int line) {
+		if (line > 14)
+			return null;
+		if (line < 0)
+			return null;
+		return getOrCreateTeam(line).getValue();
+	}
 
-}
+	/**
+	 * Get the team assigned to a line
+	 * @return the {@link VirtualTeam} used to display this line
+	 */
+	public VirtualTeam getTeam(int line) {
+		if (line > 14)
+			return null;
+		if (line < 0)
+			return null;
+		return getOrCreateTeam(line);
+	}
+
+	private PlayerConnection getPlayer() {
+		return ((CraftPlayer) player).getHandle().playerConnection;
+	}
+
+	private void sendLine(int line) {
+		if (line > 14)
+			return;
+		if (line < 0)
+			return;
+		if (!created)
+			return;
+
+		int score = (15 - line);
+		VirtualTeam val = getOrCreateTeam(line);
+		for (@SuppressWarnings("rawtypes") Packet packet : val.sendLine())
+			getPlayer().sendPacket(packet);
+		getPlayer().sendPacket(sendScore(val.getCurrentPlayer(), score));
+		val.reset();
+	}
+
+	private VirtualTeam getOrCreateTeam(int line) {
+		if (lines[line] == null)
+			lines[line] = new VirtualTeam("__fakeScore" + line);
+
+		return lines[line];
+	}
+
+	/*
+		Factories
+		 */
+	private PacketPlayOutScoreboardObjective createObjectivePacket(int mode, String displayName) {
+		PacketPlayOutScoreboardObjective packet = new PacketPlayOutScoreboardObjective();
+		// Nom de l'objectif
+		setField(packet, "a", player.getName());
+
+		// Mode
+		// 0 : créer
+		// 1 : Supprimer
+		// 2 : Mettre à jour
+		setField(packet, "d", mode);
+
+		if (mode == 0 || mode == 2) {
+			setField(packet, "b", displayName);
+			setField(packet, "c", IScoreboardCriteria.EnumScoreboardHealthDisplay.INTEGER);
+		}
+
+		return packet;
+	}
+
+	private PacketPlayOutScoreboardDisplayObjective setObjectiveSlot() {
+		PacketPlayOutScoreboardDisplayObjective packet = new PacketPlayOutScoreboardDisplayObjective();
+		// Slot
+		setField(packet, "a", 1);
+		setField(packet, "b", player.getName());
+
+		return packet;
+	}
+
+	private PacketPlayOutScoreboardScore sendScore(String line, int score) {
+		PacketPlayOutScoreboardScore packet = new PacketPlayOutScoreboardScore(line);
+		setField(packet, "b", player.getName());
+		setField(packet, "c", score);
+		setField(packet, "d", PacketPlayOutScoreboardScore.EnumScoreboardAction.CHANGE);
+
+		return packet;
+	}
+
+	private PacketPlayOutScoreboardScore removeLine(String line) {
+		return new PacketPlayOutScoreboardScore(line);
+	}
+
+	/**
+	 * This class is used to manage the content of a line. Advanced users can use it as they want, but they are encouraged to read and understand the
+	 * code before doing so. Use these methods at your own risk.
+	 */
+	public class VirtualTeam {
+		private final String name;
+		private String prefix;
+		private String suffix;
+		private String currentPlayer;
+		private String oldPlayer;
+
+		private boolean prefixChanged, suffixChanged, playerChanged = false;
+		private boolean first = true;
+
+		private VirtualTeam(String name, String prefix, String suffix) {
+			this.name = name;
+			this.prefix = prefix;
+			this.suffix = suffix;
+		}
+
+		private VirtualTeam(String name) {
+			this(name, "", "");
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public String getPrefix() {
+			return prefix;
+		}
+
+		public void setPrefix(String prefix) {
+			if (this.prefix == null || !this.prefix.equals(prefix))
+				this.prefixChanged = true;
+			this.prefix = prefix;
+		}
+
+		public String getSuffix() {
+			return suffix;
+		}
+
+		public void setSuffix(String suffix) {
+			if (this.suffix == null || !this.suffix.equals(prefix))
+				this.suffixChanged = true;
+			this.suffix = suffix;
+		}
+
+		private PacketPlayOutScoreboardTeam createPacket(int mode) {
+			PacketPlayOutScoreboardTeam packet = new PacketPlayOutScoreboardTeam();
+			setField(packet, "a", name);
+			setField(packet, "h", mode);
+			setField(packet, "b", "");
+			setField(packet, "c", prefix);
+			setField(packet, "d", suffix);
+			setField(packet, "i", 0);
+			setField(packet, "e", "always");
+			setField(packet, "f", 0);
+
+			return packet;
+		}
+
+		public PacketPlayOutScoreboardTeam createTeam() {
+			return createPacket(0);
+		}
+
+		public PacketPlayOutScoreboardTeam updateTeam() {
+			return createPacket(2);
+		}
+
+		public PacketPlayOutScoreboardTeam removeTeam() {
+			PacketPlayOutScoreboardTeam packet = new PacketPlayOutScoreboardTeam();
+			setField(packet, "a", name);
+			setField(packet, "h", 1);
+			first = true;
+			return packet;
+		}
+
+		public void setPlayer(String name) {
+			if (this.currentPlayer == null || !this.currentPlayer.equals(name))
+				this.playerChanged = true;
+			this.oldPlayer = this.currentPlayer;
+			this.currentPlayer = name;
+		}
+
+		public Iterable<PacketPlayOutScoreboardTeam> sendLine() {
+			List<PacketPlayOutScoreboardTeam> packets = new ArrayList<>();
+
+			if (first) {
+				packets.add(createTeam());
+			} else if (prefixChanged || suffixChanged) {
+				packets.add(updateTeam());
+			}
+
+			if (first || playerChanged) {
+				if (oldPlayer != null)										// remove these two lines ?
+					packets.add(addOrRemovePlayer(4, oldPlayer)); 	//
+				packets.add(changePlayer());
+			}
+
+			if (first)
+				first = false;
+
+			return packets;
+		}
+
+		public void reset() {
+			prefixChanged = false;
+			suffixChanged = false;
+			playerChanged = false;
+			oldPlayer = null;
+		}
+
+		public PacketPlayOutScoreboardTeam changePlayer() {
+			return addOrRemovePlayer(3, currentPlayer);
+		}
+
+		@SuppressWarnings("unchecked")
+		public PacketPlayOutScoreboardTeam addOrRemovePlayer(int mode, String playerName) {
+			PacketPlayOutScoreboardTeam packet = new PacketPlayOutScoreboardTeam();
+			setField(packet, "a", name);
+			setField(packet, "h", mode);
+
+			try {
+				Field f = packet.getClass().getDeclaredField("g");
+				f.setAccessible(true);
+				((List<String>) f.get(packet)).add(playerName);
+			} catch (NoSuchFieldException | IllegalAccessException e) {
+				e.printStackTrace();
+			}
+
+			return packet;
+		}
+
+		public String getCurrentPlayer() {
+			return currentPlayer;
+		}
+
+		public String getValue() {
+			return getPrefix() + getCurrentPlayer() + getSuffix();
+		}
+
+		public void setValue(String value) {
+			if (value.length() <= 16) {
+				setPrefix("");
+				setSuffix("");
+				setPlayer(value);
+			} else if (value.length() <= 32) {
+				setPrefix(value.substring(0, 16));
+				setPlayer(value.substring(16));
+				setSuffix("");
+			} else if (value.length() <= 48) {
+				setPrefix(value.substring(0, 16));
+				setPlayer(value.substring(16, 32));
+				setSuffix(value.substring(32));
+			} else {
+				throw new IllegalArgumentException("Too long value ! Max 48 characters, value was " + value.length() + " !");
+			}
+		}
+	}
+
+	private static void setField(Object edit, String fieldName, Object value) {
+		try {
+			Field field = edit.getClass().getDeclaredField(fieldName);
+			field.setAccessible(true);
+			field.set(edit, value);
+		} catch (NoSuchFieldException | IllegalAccessException e) {
+			e.printStackTrace();
+		}
+	}
+}}
