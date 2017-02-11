@@ -58,7 +58,7 @@ public class ApiPlayer extends CraftPlayer{
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF("message");
         out.writeUTF(message);
-        this.craftPlayer.sendPluginMessage(Main.getinstance(), "server", out.toByteArray());
+        this.craftPlayer.sendPluginMessage(Main.getinstance(), "BungeeCord", out.toByteArray());
     }
 	@SuppressWarnings("static-access")
 	public void sendTo(ServerList serverList) {
