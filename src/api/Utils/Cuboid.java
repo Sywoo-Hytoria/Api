@@ -1,7 +1,7 @@
 package fr.hytoria.api.Utils;
 
 /**
- * Created by Stephane on 05/02/2017.
+ * Created by Sywoo on 05/02/2017.
  */
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -255,7 +255,6 @@ public class Cuboid implements Iterable<Block>, Cloneable, ConfigurationSerializ
 
     //-----------------------------------------------------
 
-    @SuppressWarnings("CloneDoesntCallSuperClone")
     @Override
     public Cuboid clone() throws CloneNotSupportedException {
         return new Cuboid(this);

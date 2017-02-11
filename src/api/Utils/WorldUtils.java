@@ -19,7 +19,7 @@ public class WorldUtils {
 	public void CreateOriginalWorld(){
 		Bukkit.createWorld(new WorldCreator(this.name));	
 	}
-	public void CreateWorldCopy(World copyname){
+	public void CreateWorldCopy(World copyname, String name){
 		Bukkit.createWorld(new WorldCreator(name).copy(copyname));
 	}
 	public void DeleteAllWorld(){
