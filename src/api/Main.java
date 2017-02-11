@@ -22,9 +22,9 @@ public class Main extends JavaPlugin{
     public void onEnable() {
 
         instance = this;
-        getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
-        getServer().getMessenger().registerOutgoingPluginChannel(this, "server");
-        getServer().getMessenger().registerIncomingPluginChannel(this, "server", new MessagingChannel());
+		getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+		getServer().getMessenger().registerOutgoingPluginChannel(this, "server");
+		getServer().getMessenger().registerIncomingPluginChannel(this, "server", new MessagingChannel());
     }
 }
 
