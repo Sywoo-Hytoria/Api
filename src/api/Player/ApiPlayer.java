@@ -15,6 +15,7 @@ import fr.hytoria.api.Main;
 import fr.hytoria.api.MySql.grade.GradeSQL;
 import fr.hytoria.api.MySql.money.Coins;
 import fr.hytoria.api.MySql.money.PayoutCoins;
+import fr.hytoria.api.MySql.perm.PermSQL;
 import fr.hytoria.api.Utils.enumerations.ServerList;
 import net.minecraft.server.v1_8_R3.IChatBaseComponent;
 import net.minecraft.server.v1_8_R3.PacketPlayOutChat;
@@ -31,6 +32,7 @@ public class ApiPlayer extends CraftPlayer{
     private GradeSQL gradeSQL = new GradeSQL();
     private Coins coins = new Coins();
     private PayoutCoins coinspay = new PayoutCoins();
+    private PermSQL permissions = new PermSQL();
     
     public ApiPlayer(Player craftPlayer) {
 		super((CraftServer)Bukkit.getServer(), ((CraftPlayer)craftPlayer).getHandle());
@@ -46,6 +48,8 @@ public class ApiPlayer extends CraftPlayer{
     	coins.createAccount(uuid);
     	gradeSQL.createAccount(uuid);
     	coinspay.createAccount(uuid);
+    	permissions.setupPerms(Bukkit.getOfflinePlayer(uuid).getPlayer());
+    	PlayerCache playercache = new PlayerCache(getRankId(), getcoins(), getPayout(), getAllPermission());
     }
     
 
@@ -138,7 +142,26 @@ public class ApiPlayer extends CraftPlayer{
 	public void removePayout(int money) {
 		this.coinspay.removeCoins(this.uuid, money);
 	}
-    
+	/*
+	 * 
+	 * 
+	 */
+	@SuppressWarnings("static-access")
+	public void addPermission(String permission){
+		permissions.addPermission(this.craftPlayer, permission);
+	}
+	
+	@SuppressWarnings("static-access")
+	public void removePermission(String permission){
+		permissions.removePermission(this.craftPlayer, permission);
+	}
+	public String[] getAllPermission(){
+		
+		return permissions.getAllPermission();
+	}
+    /*
+     * 
+     */
 
 
 }

@@ -10,7 +10,7 @@ public class SQLConnection
 	private static MySql mysql = new MySql();
 
 	public static void Connection() { 
-		MySql.Connection("jdbc:mysql://127.0.0.1:3306/********", "root", "***********");
+		MySql.Connection("jdbc:mysql://127.0.0.1:3306/HytoriaServeur", "root", "lelapinvert");
 	}
 
 	public static void Deconnection()
