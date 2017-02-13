@@ -28,7 +28,7 @@ implements Listener
 				System.out.println(input.readUTF());
 				for (String string : BungeeCord.getInstance().getServers().keySet()) {
 					ServerInfo server = BungeeCord.getInstance().getServerInfo(string);
-					server.sendData("scopegames", event.getData());
+					server.sendData("server", event.getData());
 				}
 			}
 		}
