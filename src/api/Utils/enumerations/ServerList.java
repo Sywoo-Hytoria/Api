@@ -10,7 +10,8 @@ public enum ServerList
 	DEV1("dev1"),
 	DEV2("dev2"),
 	DEV3("dev3"),
-	HUB("hub");
+	HUB("hub"),
+	PINKBERRIES("pinkberries");
 
 	private String server;
 
