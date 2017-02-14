@@ -67,6 +67,13 @@ public class ApiPlayer extends CraftPlayer{
 		out.writeUTF(serverList.getServer());
 		this.craftPlayer.sendPluginMessage(Main.getinstance(), "BungeeCord", out.toByteArray());
 	}
+	@SuppressWarnings("static-access")
+	public void sendTo(String name) {
+		ByteArrayDataOutput out = ByteStreams.newDataOutput();
+		out.writeUTF("Connect");
+		out.writeUTF(name);
+		this.craftPlayer.sendPluginMessage(Main.getinstance(), "BungeeCord", out.toByteArray());
+	}
     public void sendHeaderFooter(String headerMSG, String footerMSG) {
         PlayerConnection connection = this.craftPlayer.getHandle().playerConnection;
         IChatBaseComponent header = IChatBaseComponent.ChatSerializer.a("{ text: \"" + headerMSG + "\" }");

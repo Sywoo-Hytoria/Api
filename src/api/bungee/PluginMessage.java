@@ -24,7 +24,7 @@ implements Listener
 			if (subchannel.equalsIgnoreCase("message")) {
 				msg = input.readUTF();
 				Bungee.instance.getProxy().broadcast(msg);
-			} else if (subchannel.equalsIgnoreCase("Message")) {
+			} else if (subchannel.equalsIgnoreCase("messages")) {
 				System.out.println(input.readUTF());
 				for (String string : BungeeCord.getInstance().getServers().keySet()) {
 					ServerInfo server = BungeeCord.getInstance().getServerInfo(string);
