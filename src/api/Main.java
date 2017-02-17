@@ -1,8 +1,11 @@
 package fr.hytoria.api;
 
-import fr.hytoria.api.Utils.MessagingChannel;
+
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import fr.hytoria.api.Utils.MessagingChannel;
+import fr.hytoria.api.listener.ListenerMananager;
 
 /**
  * Created by Sywoo on 05/02/2017.
@@ -22,9 +25,11 @@ public class Main extends JavaPlugin{
     public void onEnable() {
 
         instance = this;
-		getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
-		getServer().getMessenger().registerOutgoingPluginChannel(this, "server");
-		getServer().getMessenger().registerIncomingPluginChannel(this, "server", new MessagingChannel());
+        getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+        getServer().getMessenger().registerOutgoingPluginChannel(this, "server");
+        getServer().getMessenger().registerIncomingPluginChannel(this, "server", new MessagingChannel());
+        new ListenerMananager().register();
+
     }
 }
 

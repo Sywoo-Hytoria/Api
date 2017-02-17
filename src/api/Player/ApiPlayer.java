@@ -12,10 +12,12 @@ import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 
 import fr.hytoria.api.Main;
+import fr.hytoria.api.MySql.ban.BanSQL;
 import fr.hytoria.api.MySql.grade.GradeSQL;
 import fr.hytoria.api.MySql.money.Coins;
 import fr.hytoria.api.MySql.money.PayoutCoins;
 import fr.hytoria.api.MySql.perm.PermSQL;
+import fr.hytoria.api.Utils.ABT;
 import fr.hytoria.api.Utils.enumerations.ServerList;
 import net.minecraft.server.v1_8_R3.IChatBaseComponent;
 import net.minecraft.server.v1_8_R3.PacketPlayOutChat;
@@ -33,6 +35,7 @@ public class ApiPlayer extends CraftPlayer{
     private Coins coins = new Coins();
     private PayoutCoins coinspay = new PayoutCoins();
     private PermSQL permissions = new PermSQL();
+    private BanSQL ban = new BanSQL();
     
     public ApiPlayer(Player craftPlayer) {
 		super((CraftServer)Bukkit.getServer(), ((CraftPlayer)craftPlayer).getHandle());
@@ -49,33 +52,37 @@ public class ApiPlayer extends CraftPlayer{
     	gradeSQL.createAccount(uuid);
     	coinspay.createAccount(uuid);
     	permissions.setupPerms(Bukkit.getOfflinePlayer(uuid).getPlayer());
-    	PlayerCache playercache = new PlayerCache(getRankId(), getcoins(), getPayout(), getAllPermission());
+    	PlayerCache playercache = new PlayerCache(getRankId(), getcoins(), getPayout(),
+    			getAllPermission(), ban.isban(uuid), 
+    			ban.getExpirationDate(uuid), ban.getReason(uuid), ban.getOwner(uuid));
+    	
+    	
     }
     
 
-    @SuppressWarnings("static-access")
-	public void sendMessageWithBungee(String message) {
+    public void sendMessageWithBungee(String message) {
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF("message");
         out.writeUTF(message);
-        this.craftPlayer.sendPluginMessage(Main.getinstance(), "BungeeCord", out.toByteArray());
-    }
-	@SuppressWarnings("static-access")
+        craftPlayer.sendPluginMessage(Main.getinstance(), "server", out.toByteArray());
+      }
+
+
 	public void sendTo(ServerList serverList) {
 		ByteArrayDataOutput out = ByteStreams.newDataOutput();
 		out.writeUTF("Connect");
 		out.writeUTF(serverList.getServer());
-		this.craftPlayer.sendPluginMessage(Main.getinstance(), "BungeeCord", out.toByteArray());
+		craftPlayer.sendPluginMessage(Main.getinstance(), "BungeeCord", out.toByteArray());
 	}
-	@SuppressWarnings("static-access")
+
 	public void sendTo(String name) {
 		ByteArrayDataOutput out = ByteStreams.newDataOutput();
 		out.writeUTF("Connect");
 		out.writeUTF(name);
-		this.craftPlayer.sendPluginMessage(Main.getinstance(), "BungeeCord", out.toByteArray());
+		craftPlayer.sendPluginMessage(Main.getinstance(), "BungeeCord", out.toByteArray());
 	}
     public void sendHeaderFooter(String headerMSG, String footerMSG) {
-        PlayerConnection connection = this.craftPlayer.getHandle().playerConnection;
+        PlayerConnection connection = craftPlayer.getHandle().playerConnection;
         IChatBaseComponent header = IChatBaseComponent.ChatSerializer.a("{ text: \"" + headerMSG + "\" }");
         IChatBaseComponent footer = IChatBaseComponent.ChatSerializer.a("{ text: \"" + footerMSG + "\" }");
         PacketPlayOutPlayerListHeaderFooter packet = new PacketPlayOutPlayerListHeaderFooter();
@@ -101,11 +108,12 @@ public class ApiPlayer extends CraftPlayer{
     public void sendActionBarMessage(String actionBarMSG) {
         IChatBaseComponent actionBar = IChatBaseComponent.ChatSerializer.a("{ text: \"" + actionBarMSG + "\" }");
         PacketPlayOutChat packet = new PacketPlayOutChat(actionBar, (byte) 2);
-        this.craftPlayer.getHandle().playerConnection.sendPacket(packet);
+        craftPlayer.getHandle().playerConnection.sendPacket(packet);
     }
-    public void SentTitle(String Title, String SubTitle){
-    	this.craftPlayer.sendTitle(Title, SubTitle);
-    }
+    public void sendTitle(String title, String subtitle, int ticks){
+        ABT abt = new ABT();
+        abt.sendTitle(craftPlayer, title, subtitle, ticks);
+       }
     /*
      * Gestion des grades
      */
